@@ -43,7 +43,7 @@ elif usuario == "alexandre":
     menu = st.sidebar.selectbox("Menu", ["Executar OS", "Finalizar OS"])
 
 elif usuario == "gestao":
-    menu = st.sidebar.selectbox("Menu", ["Dashboard", "Cadastro Placas"])
+    menu = st.sidebar.selectbox("Menu", ["Dashboard", "Cadastrar Placas"])
 
 
  # NAVEGAÇÃO
