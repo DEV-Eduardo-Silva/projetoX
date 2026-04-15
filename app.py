@@ -59,6 +59,10 @@ elif menu == "Executar OS":
 
 elif menu == "Finalizar OS":
     exec(open("finalizar.py").read())
+    
+elif menu == "Cadastrar Placas":
+    exec(open("cadastroplacas.py").read())
+
 
 #  SAIR
 
