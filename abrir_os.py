@@ -1,6 +1,10 @@
 import streamlit as st
 import psycopg2
 from datetime import datetime
+from dotenv import load_dotenv
+import os
+load_dotenv()
+
 
 st.title("🚛 Abertura de Ordem de Serviço")
 
@@ -60,10 +64,12 @@ if st.button("Abrir OS"):
     else:
         #  CONECTA NO BANCO = PRECISO PRIVAR PARA NAO DEIXAR A MOSTRA SENHA E BANCO
         conn = psycopg2.connect(
-            host="localhost",
-            database="oficina_db",
-            user="postgres",
-            password="7592"
+            host=st.secrets["DB_HOST"],
+            port=st.secrets["DB_PORT"],
+            database=st.secrets["DB_NAME"],
+            user=st.secrets["DB_USER"],
+            password=st.secrets["DB_PASSWORD"],
+            sslmode="require"
         )
 
         cursor = conn.cursor()
