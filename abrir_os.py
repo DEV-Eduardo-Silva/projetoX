@@ -158,6 +158,7 @@ if st.button("Abrir OS"):
             conn.commit()
 
             st.success("OS abertas com sucesso!")
+            st.rerun()
 
         cursor.close()
         conn.close()
