@@ -1,31 +1,33 @@
 import streamlit as st
 import psycopg2
-from datetime import datetime
-from dotenv import load_dotenv
-import os
+from datetime import datetime, timedelta
 
 st.set_page_config(layout="wide")
 st.title("✅ Finalização de Serviços")
 
-# CONEXÃO
-conn = psycopg2.connect(
-    host=os.getenv("DB_HOST"),
-    port=os.getenv("DB_PORT"),
-    database=os.getenv("DB_NAME"),
-    user=os.getenv("DB_USER"),
-    password=os.getenv("DB_PASSWORD")
-)
+# 🔐 CONEXÃO (Streamlit Cloud)
+def conectar():
+    return psycopg2.connect(
+        host=st.secrets["DB_HOST"],
+        port=5432,
+        database=st.secrets["DB_NAME"],
+        user=st.secrets["DB_USER"],
+        password=st.secrets["DB_PASSWORD"],
+        sslmode="require"
+    )
+
+conn = conectar()
 cursor = conn.cursor()
 
-# FUNÇÃO CONVERSÃO h:mm -> decimal
-def hora_para_decimal(hhmm):
+# 🔥 FUNÇÃO CORRETA → INTERVALO
+def hora_para_intervalo(hhmm):
     try:
         h, m = hhmm.split(":")
-        return int(h) + int(m) / 60
+        return timedelta(hours=int(h), minutes=int(m))
     except:
-        return 0
+        return timedelta(0)
 
-#  BUSCA DADOS
+# 📊 BUSCA DADOS
 cursor.execute("""
     SELECT id, numero_os, placa, tipo_servico, data_inicio, hora_inicio, executor1, executor2, rampa
     FROM ordens_servico
@@ -46,12 +48,12 @@ else:
         inicio = datetime.combine(data_inicio, hora_inicio)
         tempo_total = agora - inicio
 
-        # tempo h:mm
+        # ⏱ tempo formatado
         horas = int(tempo_total.total_seconds() // 3600)
         minutos = int((tempo_total.total_seconds() % 3600) // 60)
         tempo_sugerido = f"{horas}:{minutos:02d}"
 
-        # EXPANDER (CONTAINER)
+        # UI
         with st.expander(
             f"🚛 {placa} | 🔧 {tipo} | 👷 {executor1} {executor2 if executor2 else ''} | ⏱ {tempo_sugerido}",
             expanded=False
@@ -59,14 +61,11 @@ else:
 
             st.write(f"📍 {rampa} | OS: {numero_os}")
 
-            # 🧾 OBS
             obs_final = st.text_area("Observação final", key=f"obs_{os_id}")
 
             col_btn1, col_btn2 = st.columns(2)
 
-            
-            # EDITAR EXECUTOR E HR DE SERVIÇO
-           
+            # ✏️ EDITAR
             if col_btn1.button(f"✏️ Editar OS {numero_os}", key=f"edit_{os_id}"):
                 st.session_state[f"editando_{os_id}"] = True
 
@@ -84,14 +83,13 @@ else:
                     key=f"t2_{os_id}"
                 )
 
-                #  DATA/HORA EDITÁVEL
                 data_saida = st.date_input("Data de saída", value=agora.date(), key=f"data_{os_id}")
                 hora_saida = st.time_input("Hora de saída", value=agora.time(), key=f"hora_{os_id}")
 
                 if st.button(f"💾 Salvar edição {numero_os}", key=f"save_{os_id}"):
 
-                    t1_decimal = hora_para_decimal(tempo_exec1)
-                    t2_decimal = hora_para_decimal(tempo_exec2)
+                    t1_intervalo = hora_para_intervalo(tempo_exec1)
+                    t2_intervalo = hora_para_intervalo(tempo_exec2)
 
                     cursor.execute("""
                         UPDATE ordens_servico
@@ -106,8 +104,8 @@ else:
                     """, (
                         novo_exec1,
                         novo_exec2 if novo_exec2 else None,
-                        t1_decimal,
-                        t2_decimal,
+                        t1_intervalo,
+                        t2_intervalo,
                         data_saida,
                         hora_saida,
                         os_id
@@ -119,13 +117,11 @@ else:
                     st.session_state[f"editando_{os_id}"] = False
                     st.rerun()
 
-            
-            # FINALIZAR
-            
+            # ✅ FINALIZAR
             if col_btn2.button(f"✅ Finalizar OS {numero_os}", key=f"final_{os_id}"):
 
-                t1_decimal = hora_para_decimal(tempo_sugerido)
-                t2_decimal = t1_decimal if executor2 else 0
+                t1_intervalo = hora_para_intervalo(tempo_sugerido)
+                t2_intervalo = t1_intervalo if executor2 else timedelta(0)
 
                 cursor.execute("""
                     UPDATE ordens_servico
@@ -140,8 +136,8 @@ else:
                 """, (
                     agora.date(),
                     agora.time(),
-                    t1_decimal,
-                    t2_decimal,
+                    t1_intervalo,
+                    t2_intervalo,
                     f" | FINAL: {obs_final}" if obs_final else "",
                     os_id
                 ))
