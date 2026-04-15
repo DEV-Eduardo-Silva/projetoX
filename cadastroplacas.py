@@ -39,6 +39,6 @@ if st.button("Salvar placas"):
         conn.commit()
 
         st.success("Placas cadastradas!")
-
+        st.rerun()
         cursor.close()
         conn.close()
