@@ -49,16 +49,16 @@ elif usuario == "gestao":
  # NAVEGAÇÃO
 
 if menu == "Dashboard":
-    import dashboard
+    exec(open("dashboard.py").read())
 
 elif menu == "Abrir OS":
-    import abrir_os
+    exec(open("abrir_os.py").read())
 
 elif menu == "Executar OS":
-    import iniciar_os
+    exec(open("iniciar_os.py").read())
 
 elif menu == "Finalizar OS":
-    import finalizar
+    exec(open("finalizar.py").read())
 
 #  SAIR
 
