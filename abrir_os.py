@@ -3,14 +3,12 @@ import psycopg2
 from datetime import datetime
 import pytz
 
-# FUSO BRASÍLIA
+# FUSO BRASILIA
 fuso_brasilia = pytz.timezone("America/Sao_Paulo")
 
-st.title("🚛 Abertura de Ordem de Serviço")
+st.title("Abertura de Ordem de Serviço")
 
-
-# FUNÇÃO CONEXÃO
-
+# FUNCAO CONEXAO
 def conectar():
     return psycopg2.connect(
         host=st.secrets["DB_HOST"],
@@ -21,15 +19,12 @@ def conectar():
         sslmode="require"
     )
 
-
 # INPUT PLACA
-
 placa = st.text_input("Placa do veículo", key="placa")
 
 st.subheader("Selecione os serviços")
 
-# CHECKBOX SERVIÇOS
-
+# CHECKBOX SERVICOS
 mecanica = st.checkbox("Mecânica", key="mecanica")
 eletrica = st.checkbox("Elétrica", key="eletrica")
 borracharia = st.checkbox("Borracharia", key="borracharia")
@@ -37,9 +32,7 @@ chapeacao = st.checkbox("Chapeação", key="chapeacao")
 material = st.checkbox("Entrega de Material", key="material")
 amarracao = st.checkbox("Amarração", key="amarracao")
 
-
-# OBS PADRÃO (CASO NÃO MARQUE)
-
+# OBS PADRAO (CASO NAO MARQUE)
 obs_mecanica = ""
 obs_eletrica = ""
 obs_borracharia = ""
@@ -48,7 +41,6 @@ obs_material = ""
 obs_amarracao = ""
 
 # CAMPOS DE OBS
-
 if mecanica:
     obs_mecanica = st.text_area(
         "Obs Mecânica",
@@ -91,9 +83,7 @@ if amarracao:
         key="obs_amarracao"
     )
 
-
-# BOTÃO ABRIR OS
-
+# BOTAO ABRIR OS
 if st.button("Abrir OS"):
 
     if placa.strip() == "":
@@ -116,7 +106,7 @@ if st.button("Abrir OS"):
         else:
             agora = datetime.now(fuso_brasilia)
 
-            # CRIA OS PARA CADA SERVIÇO MARCADO
+            # CRIA OS PARA CADA SERVICO MARCADO
             if mecanica:
                 cursor.execute("""
                     INSERT INTO ordens_servico (
@@ -217,23 +207,26 @@ if st.button("Abrir OS"):
 
             st.success("OS abertas com sucesso!")
 
-            
-            # LIMPAR CAMPOS APÓS ABRIR
-           
-            st.session_state["placa"] = ""
-            st.session_state["mecanica"] = False
-            st.session_state["eletrica"] = False
-            st.session_state["borracharia"] = False
-            st.session_state["chapeacao"] = False
-            st.session_state["material"] = False
-            st.session_state["amarracao"] = False
+            # LIMPAR CAMPOS APOS ABRIR
+            chaves_limpar = [
+                "placa",
+                "mecanica",
+                "eletrica",
+                "borracharia",
+                "chapeacao",
+                "material",
+                "amarracao",
+                "obs_mecanica",
+                "obs_eletrica",
+                "obs_borracharia",
+                "obs_chapeacao",
+                "obs_material",
+                "obs_amarracao"
+            ]
 
-            st.session_state["obs_mecanica"] = ""
-            st.session_state["obs_eletrica"] = ""
-            st.session_state["obs_borracharia"] = ""
-            st.session_state["obs_chapeacao"] = ""
-            st.session_state["obs_material"] = ""
-            st.session_state["obs_amarracao"] = ""
+            for chave in chaves_limpar:
+                if chave in st.session_state:
+                    del st.session_state[chave]
 
             cursor.close()
             conn.close()
