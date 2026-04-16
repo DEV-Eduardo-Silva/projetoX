@@ -41,6 +41,21 @@ def limpar_campos():
         if chave in st.session_state:
             del st.session_state[chave]
 
+# SE MOSTRAR CONFIRMACAO
+if st.session_state.get("mostrar_confirmacao", False):
+
+    st.markdown("---")
+    st.markdown("## Confirmação")
+
+    st.success("OS abertas com sucesso!")
+
+    if st.button("OK"):
+        st.session_state["mostrar_confirmacao"] = False
+        limpar_campos()
+        st.rerun()
+
+    st.stop()
+
 # INPUT PLACA
 placa = st.text_input("Placa do veículo", key="placa")
 
@@ -230,18 +245,8 @@ if st.button("Abrir OS"):
             cursor.close()
             conn.close()
 
-            # ATIVA MODAL
-            st.session_state["mostrar_modal_sucesso"] = True
+            st.session_state["mostrar_confirmacao"] = True
             st.rerun()
 
         cursor.close()
         conn.close()
-
-# MODAL DE CONFIRMACAO
-if st.session_state.get("mostrar_modal_sucesso", False):
-    with st.modal("Confirmação"):
-        st.success("OS abertas com sucesso!")
-        if st.button("OK"):
-            st.session_state["mostrar_modal_sucesso"] = False
-            limpar_campos()
-            st.rerun()
