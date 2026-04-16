@@ -139,11 +139,12 @@ else:
                     SET
                         executor1 = %s,
                         executor2 = %s,
-                        tempo_executor1 = ((data_inicio + hora_inicio) + (%s || ':00')::interval)::time,
+                        tempo_executor1 = (%s || ':00')::interval,
                         tempo_executor2 = CASE
                             WHEN %s IS NULL OR %s = '' THEN NULL
-                            ELSE (((data_inicio + hora_inicio) + (%s || ':00')::interval)::time)
+                            ELSE (%s || ':00')::interval
                         END,
+                        hora_maodeobra = (hora_inicio + (%s || ':00')::interval),
                         data_saida = %s,
                         hora_saida = %s
                     WHERE id = %s
@@ -154,6 +155,7 @@ else:
                     novo_exec2,
                     novo_exec2,
                     tempo_exec2,
+                    tempo_exec1,
                     data_saida,
                     hora_saida,
                     os_id
@@ -162,25 +164,26 @@ else:
             if col_btn2.button(f"Finalizar OS {numero_os}", key=f"final_{os_id}"):
 
                 cursor.execute("""
+                cursor.execute("""
                 UPDATE ordens_servico
                 SET
                     status = 'FINALIZADO',
                     data_saida = %s,
                     hora_saida = %s,
-                    tempo_executor1 = ((data_inicio + hora_inicio) + (%s || ':00')::interval)::time,
+                    tempo_executor1 = (%s || ':00')::interval,
                     tempo_executor2 = CASE
                         WHEN executor2 IS NULL OR executor2 = '' THEN NULL
-                        ELSE (((data_inicio + hora_inicio) + (%s || ':00')::interval)::time)
+                        ELSE (%s || ':00')::interval
                     END,
+                    hora_maodeobra = (hora_inicio + (%s || ':00')::interval),
                     obs = COALESCE(obs, '') || %s
                 WHERE id = %s
             """, (
                 agora.date(),
                 agora.time(),
-                tempo_exec1,
-                executor2,
-                executor2,
-                tempo_exec2,
+                tempo_sugerido,
+                tempo_sugerido,
+                tempo_sugerido,
                 f" | FINAL: {obs_final}" if obs_final else "",
                 os_id
             ))
