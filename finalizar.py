@@ -79,7 +79,6 @@ else:
             col_btn1, col_btn2 = st.columns(2)
 
             # EDITAR
-        
             if col_btn1.button(f"Editar OS {numero_os}", key=f"edit_{os_id}"):
                 st.session_state[f"editando_{os_id}"] = True
 
@@ -115,6 +114,20 @@ else:
                     index=index_exec2,
                     key=f"exec2_{os_id}"
                 )
+
+                tempo_exec1 = st.text_input(
+                    "Tempo Executor 1 (h:mm)",
+                    value=tempo_sugerido,
+                    key=f"t1_{os_id}"
+                )
+
+                tempo_exec2 = "0:00"
+                if novo_exec2 and novo_exec2.strip() != "":
+                    tempo_exec2 = st.text_input(
+                        "Tempo Executor 2 (h:mm)",
+                        value=tempo_sugerido,
+                        key=f"t2_{os_id}"
+                    )
 
                 data_saida = st.date_input("Data de saída", value=agora.date(), key=f"data_{os_id}")
                 hora_saida = st.time_input("Hora de saída", value=agora.time(), key=f"hora_{os_id}")
