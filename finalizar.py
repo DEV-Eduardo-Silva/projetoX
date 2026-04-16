@@ -6,9 +6,9 @@ import pytz
 fuso_brasilia = pytz.timezone("America/Sao_Paulo")
 
 st.set_page_config(layout="wide")
-st.title("✅ Finalização de Serviços")
+st.title("Finalização de Serviços")
 
-# 🔐 CONEXÃO (Streamlit Cloud)
+# CONEXAO (Streamlit Cloud)
 def conectar():
     return psycopg2.connect(
         host=st.secrets["DB_HOST"],
@@ -22,7 +22,7 @@ def conectar():
 conn = conectar()
 cursor = conn.cursor()
 
-# FUNÇÃO INTERVALO
+# FUNCAO INTERVALO
 def hora_para_intervalo(hhmm):
     try:
         h, m = hhmm.split(":")
@@ -47,29 +47,35 @@ else:
 
         os_id, numero_os, placa, tipo, data_inicio, hora_inicio, executor1, executor2, rampa = os
 
-        agora = datetime.now(fuso_brasilia)
+        agora = datetime.now(fuso_brasilia).replace(second=0, microsecond=0)
+
+        # VALIDACAO PARA NAO QUEBRAR CASO DATA/HORA ESTEJA NULO
+        if data_inicio is None or hora_inicio is None:
+            st.error(f"OS {numero_os} está sem data_inicio ou hora_inicio no banco.")
+            continue
+
         inicio = datetime.combine(data_inicio, hora_inicio)
         tempo_total = agora - inicio
 
-        # tempo formatado
+        # TEMPO FORMATADO
         horas = int(tempo_total.total_seconds() // 3600)
         minutos = int((tempo_total.total_seconds() % 3600) // 60)
         tempo_sugerido = f"{horas}:{minutos:02d}"
 
         # UI
         with st.expander(
-            f"🚛 {placa} | 🔧 {tipo} | 👷 {executor1} {executor2 if executor2 else ''} | ⏱ {tempo_sugerido}",
+            f"{placa} | {tipo} | {executor1} {executor2 if executor2 else ''} | {tempo_sugerido}",
             expanded=False
         ):
 
-            st.write(f"📍 {rampa} | OS: {numero_os}")
+            st.write(f"{rampa} | OS: {numero_os}")
 
             obs_final = st.text_area("Observação final", key=f"obs_{os_id}")
 
             col_btn1, col_btn2 = st.columns(2)
 
-            #  EDITAR
-            if col_btn1.button(f"✏️ Editar OS {numero_os}", key=f"edit_{os_id}"):
+            # EDITAR
+            if col_btn1.button(f"Editar OS {numero_os}", key=f"edit_{os_id}"):
                 st.session_state[f"editando_{os_id}"] = True
 
             if st.session_state.get(f"editando_{os_id}", False):
@@ -87,9 +93,14 @@ else:
                 )
 
                 data_saida = st.date_input("Data de saída", value=agora.date(), key=f"data_{os_id}")
-                hora_saida = st.time_input("Hora de saída", value=agora.time(), key=f"hora_{os_id}")
 
-                if st.button(f"💾 Salvar edição {numero_os}", key=f"save_{os_id}"):
+                hora_saida = st.time_input(
+                    "Hora de saída",
+                    value=agora.time().replace(second=0, microsecond=0),
+                    key=f"hora_{os_id}"
+                )
+
+                if st.button(f"Salvar edição {numero_os}", key=f"save_{os_id}"):
 
                     t1_intervalo = hora_para_intervalo(tempo_exec1)
                     t2_intervalo = hora_para_intervalo(tempo_exec2)
@@ -120,8 +131,8 @@ else:
                     st.session_state[f"editando_{os_id}"] = False
                     st.rerun()
 
-            #  FINALIZAR
-            if col_btn2.button(f"✅ Finalizar OS {numero_os}", key=f"final_{os_id}"):
+            # FINALIZAR
+            if col_btn2.button(f"Finalizar OS {numero_os}", key=f"final_{os_id}"):
 
                 t1_intervalo = hora_para_intervalo(tempo_sugerido)
                 t2_intervalo = t1_intervalo if executor2 else timedelta(0)
@@ -138,7 +149,7 @@ else:
                     WHERE id = %s
                 """, (
                     agora.date(),
-                    agora.time(),
+                    agora.time().replace(second=0, microsecond=0),
                     t1_intervalo,
                     t2_intervalo,
                     f" | FINAL: {obs_final}" if obs_final else "",
