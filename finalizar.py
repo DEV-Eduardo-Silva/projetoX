@@ -135,60 +135,55 @@ else:
                 if st.button(f"Salvar edição {numero_os}", key=f"save_{os_id}"):
 
                     cursor.execute("""
-                        UPDATE ordens_servico
-                        SET
-                            executor1 = %s,
-                            executor2 = %s,
-                            tempo_executor1 = (hora_inicio + (%s || ':00')::interval),
-                            tempo_executor2 = CASE
-                                WHEN %s IS NULL OR %s = '' THEN NULL
-                                ELSE (hora_inicio + (%s || ':00')::interval)
-                            END,
-                            data_saida = %s,
-                            hora_saida = %s
-                        WHERE id = %s
-                    """, (
-                        novo_exec1,
-                        novo_exec2 if novo_exec2 else None,
-                        tempo_exec1,
-                        novo_exec2,
-                        novo_exec2,
-                        tempo_exec2,
-                        data_saida,
-                        hora_saida,
-                        os_id
-                    ))
-
-                    conn.commit()
-
-                    st.success("Alterações salvas!")
-                    st.session_state[f"editando_{os_id}"] = False
-                    st.rerun()
-
+                    UPDATE ordens_servico
+                    SET
+                        executor1 = %s,
+                        executor2 = %s,
+                        tempo_executor1 = ((data_inicio + hora_inicio) + (%s || ':00')::interval)::time,
+                        tempo_executor2 = CASE
+                            WHEN %s IS NULL OR %s = '' THEN NULL
+                            ELSE (((data_inicio + hora_inicio) + (%s || ':00')::interval)::time)
+                        END,
+                        data_saida = %s,
+                        hora_saida = %s
+                    WHERE id = %s
+                """, (
+                    novo_exec1,
+                    novo_exec2 if novo_exec2 else None,
+                    tempo_exec1,
+                    novo_exec2,
+                    novo_exec2,
+                    tempo_exec2,
+                    data_saida,
+                    hora_saida,
+                    os_id
+                ))
             # FINALIZAR
             if col_btn2.button(f"Finalizar OS {numero_os}", key=f"final_{os_id}"):
 
                 cursor.execute("""
-                    UPDATE ordens_servico
-                    SET
-                        status = 'FINALIZADO',
-                        data_saida = %s,
-                        hora_saida = %s,
-                        tempo_executor1 = (hora_inicio + (%s || ':00')::interval),
-                        tempo_executor2 = CASE
-                            WHEN executor2 IS NULL OR executor2 = '' THEN NULL
-                            ELSE (hora_inicio + (%s || ':00')::interval)
-                        END,
-                        obs = COALESCE(obs, '') || %s
-                    WHERE id = %s
-                """, (
-                    agora.date(),
-                    agora.time(),
-                    tempo_sugerido,
-                    tempo_sugerido,
-                    f" | FINAL: {obs_final}" if obs_final else "",
-                    os_id
-                ))
+                UPDATE ordens_servico
+                SET
+                    status = 'FINALIZADO',
+                    data_saida = %s,
+                    hora_saida = %s,
+                    tempo_executor1 = ((data_inicio + hora_inicio) + (%s || ':00')::interval)::time,
+                    tempo_executor2 = CASE
+                        WHEN executor2 IS NULL OR executor2 = '' THEN NULL
+                        ELSE (((data_inicio + hora_inicio) + (%s || ':00')::interval)::time)
+                    END,
+                    obs = COALESCE(obs, '') || %s
+                WHERE id = %s
+            """, (
+                agora.date(),
+                agora.time(),
+                tempo_exec1,
+                executor2,
+                executor2,
+                tempo_exec2,
+                f" | FINAL: {obs_final}" if obs_final else "",
+                os_id
+            ))
 
                 conn.commit()
 
