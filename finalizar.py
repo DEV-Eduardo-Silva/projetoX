@@ -49,8 +49,17 @@ else:
 
         agora = datetime.now(fuso_brasilia)
 
+        # VALIDACAO PARA NAO QUEBRAR SE ESTIVER NULO
+        if data_inicio is None or hora_inicio is None:
+            st.error(f"OS {numero_os} está sem data_inicio ou hora_inicio no banco.")
+            continue
+
         inicio = fuso_brasilia.localize(datetime.combine(data_inicio, hora_inicio))
         tempo_total = agora - inicio
+
+        # SE TEMPO DER NEGATIVO, ZERA
+        if tempo_total.total_seconds() < 0:
+            tempo_total = timedelta(0)
 
         # TEMPO FORMATADO
         horas = int(tempo_total.total_seconds() // 3600)
@@ -81,11 +90,14 @@ else:
                 novo_exec2 = st.text_input("Executor 2", value=executor2 or "", key=f"exec2_{os_id}")
 
                 tempo_exec1 = st.text_input("Tempo Executor 1 (h:mm)", value=tempo_sugerido, key=f"t1_{os_id}")
-                tempo_exec2 = st.text_input(
-                    "Tempo Executor 2 (h:mm)",
-                    value=tempo_sugerido if executor2 else "0:00",
-                    key=f"t2_{os_id}"
-                )
+
+                tempo_exec2 = "0:00"
+                if novo_exec2 and novo_exec2.strip() != "":
+                    tempo_exec2 = st.text_input(
+                        "Tempo Executor 2 (h:mm)",
+                        value=tempo_sugerido,
+                        key=f"t2_{os_id}"
+                    )
 
                 data_saida = st.date_input("Data de saída", value=agora.date(), key=f"data_{os_id}")
                 hora_saida = st.time_input("Hora de saída", value=agora.time(), key=f"hora_{os_id}")
@@ -98,7 +110,10 @@ else:
                             executor1 = %s,
                             executor2 = %s,
                             tempo_executor1 = (hora_inicio + (%s || ':00')::interval),
-                            tempo_executor2 = (hora_inicio + (%s || ':00')::interval),
+                            tempo_executor2 = CASE
+                                WHEN %s IS NULL OR %s = '' THEN NULL
+                                ELSE (hora_inicio + (%s || ':00')::interval)
+                            END,
                             data_saida = %s,
                             hora_saida = %s
                         WHERE id = %s
@@ -106,6 +121,8 @@ else:
                         novo_exec1,
                         novo_exec2 if novo_exec2 else None,
                         tempo_exec1,
+                        novo_exec2,
+                        novo_exec2,
                         tempo_exec2,
                         data_saida,
                         hora_saida,
@@ -129,7 +146,7 @@ else:
                         hora_saida = %s,
                         tempo_executor1 = (hora_inicio + (%s || ':00')::interval),
                         tempo_executor2 = CASE
-                            WHEN executor2 IS NULL THEN NULL
+                            WHEN executor2 IS NULL OR executor2 = '' THEN NULL
                             ELSE (hora_inicio + (%s || ':00')::interval)
                         END,
                         obs = COALESCE(obs, '') || %s
