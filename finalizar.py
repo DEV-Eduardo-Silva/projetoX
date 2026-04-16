@@ -19,9 +19,6 @@ def conectar():
         sslmode="require"
     )
 
-conn = conectar()
-cursor = conn.cursor()
-
 # FUNCAO INTERVALO
 def hora_para_intervalo(hhmm):
     try:
@@ -29,6 +26,9 @@ def hora_para_intervalo(hhmm):
         return timedelta(hours=int(h), minutes=int(m))
     except:
         return timedelta(0)
+
+conn = conectar()
+cursor = conn.cursor()
 
 # BUSCA DADOS
 cursor.execute("""
@@ -53,6 +53,15 @@ else:
         if data_inicio is None or hora_inicio is None:
             st.error(f"OS {numero_os} está sem data_inicio ou hora_inicio no banco.")
             continue
+
+        # SE VIER COMO INTERVALO (timedelta), CONVERTE PARA TIME
+        if isinstance(hora_inicio, timedelta):
+            total_segundos = int(hora_inicio.total_seconds())
+            horas_inicio = (total_segundos // 3600) % 24
+            minutos_inicio = (total_segundos % 3600) // 60
+            hora_inicio = datetime.strptime(
+                f"{horas_inicio:02d}:{minutos_inicio:02d}", "%H:%M"
+            ).time()
 
         inicio = datetime.combine(data_inicio, hora_inicio)
         tempo_total = agora - inicio
