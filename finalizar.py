@@ -19,22 +19,34 @@ def conectar():
         sslmode="require"
     )
 
-conn = conectar()
-cursor = conn.cursor()
-
-# FUNCAO INTERVALO
+# FUNCAO PARA CONVERTER TEXTO h:mm PARA INTERVALO
 def hora_para_intervalo(hhmm):
     try:
+        hhmm = hhmm.strip()
         h, m = hhmm.split(":")
         return timedelta(hours=int(h), minutes=int(m))
     except:
         return timedelta(0)
+
+# FUNCAO PARA FORMATAR timedelta EM h:mm
+def formatar_timedelta(td):
+    total_segundos = int(td.total_seconds())
+    if total_segundos < 0:
+        total_segundos = 0
+
+    horas = total_segundos // 3600
+    minutos = (total_segundos % 3600) // 60
+    return f"{horas}:{minutos:02d}"
+
+conn = conectar()
+cursor = conn.cursor()
 
 # BUSCA DADOS
 cursor.execute("""
     SELECT id, numero_os, placa, tipo_servico, data_inicio, hora_inicio, executor1, executor2, rampa
     FROM ordens_servico
     WHERE status = 'EM MANUTENÇÃO'
+    ORDER BY data_inicio DESC, hora_inicio DESC
 """)
 
 dados = cursor.fetchall()
@@ -61,10 +73,11 @@ else:
         if tempo_total.total_seconds() < 0:
             tempo_total = timedelta(0)
 
-        # TEMPO FORMATADO
-        horas = int(tempo_total.total_seconds() // 3600)
-        minutos = int((tempo_total.total_seconds() % 3600) // 60)
-        tempo_sugerido = f"{horas}:{minutos:02d}"
+        tempo_sugerido = formatar_timedelta(tempo_total)
+
+        # LISTA EXECUTORES
+        lista_exec1 = ["Adilso", "Fabio", "Valdir", "Leandro", "Jesus", "Evandro", "Aleson", "Marcos", "Dionathan"]
+        lista_exec2 = [""] + lista_exec1
 
         # UI
         with st.expander(
@@ -85,9 +98,6 @@ else:
             if st.session_state.get(f"editando_{os_id}", False):
 
                 st.warning("Modo edição ativo")
-
-                lista_exec1 = ["Adilso", "Fabio", "Valdir", "Leandro", "Jesus", "Evandro", "Aleson", "Marcos", "Dionathan"]
-                lista_exec2 = [""] + lista_exec1
 
                 # DEFINE INDEX EXECUTOR 1
                 if executor1 in lista_exec1:
@@ -167,6 +177,23 @@ else:
                     st.session_state[f"editando_{os_id}"] = False
                     st.rerun()
 
+            st.divider()
+
+            # CAMPOS PARA FINALIZAR (sempre aparecem)
+            tempo_final_exec1 = st.text_input(
+                "Tempo Executor 1 para finalizar (h:mm)",
+                value=tempo_sugerido,
+                key=f"tempo_final_1_{os_id}"
+            )
+
+            tempo_final_exec2 = "0:00"
+            if executor2 and executor2.strip() != "":
+                tempo_final_exec2 = st.text_input(
+                    "Tempo Executor 2 para finalizar (h:mm)",
+                    value=tempo_sugerido,
+                    key=f"tempo_final_2_{os_id}"
+                )
+
             # FINALIZAR
             if col_btn2.button(f"Finalizar OS {numero_os}", key=f"final_{os_id}"):
 
@@ -187,9 +214,9 @@ else:
                 """, (
                     agora.date(),
                     agora.time(),
-                    tempo_sugerido,
-                    tempo_sugerido,
-                    tempo_sugerido,
+                    tempo_final_exec1,
+                    tempo_final_exec2,
+                    tempo_final_exec1,
                     f" | FINAL: {obs_final}" if obs_final else "",
                     os_id
                 ))
