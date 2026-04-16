@@ -1,6 +1,9 @@
 import streamlit as st
 import psycopg2
 from datetime import datetime, timedelta
+import pytz
+
+fuso_brasilia = pytz.timezone("America/Sao_Paulo")
 
 st.set_page_config(layout="wide")
 st.title("✅ Finalização de Serviços")
@@ -19,7 +22,7 @@ def conectar():
 conn = conectar()
 cursor = conn.cursor()
 
-# 🔥 FUNÇÃO CORRETA → INTERVALO
+# FUNÇÃO INTERVALO
 def hora_para_intervalo(hhmm):
     try:
         h, m = hhmm.split(":")
@@ -27,7 +30,7 @@ def hora_para_intervalo(hhmm):
     except:
         return timedelta(0)
 
-# 📊 BUSCA DADOS
+# BUSCA DADOS
 cursor.execute("""
     SELECT id, numero_os, placa, tipo_servico, data_inicio, hora_inicio, executor1, executor2, rampa
     FROM ordens_servico
@@ -44,11 +47,11 @@ else:
 
         os_id, numero_os, placa, tipo, data_inicio, hora_inicio, executor1, executor2, rampa = os
 
-        agora = datetime.now()
+        agora = datetime.now(fuso_brasilia)
         inicio = datetime.combine(data_inicio, hora_inicio)
         tempo_total = agora - inicio
 
-        # ⏱ tempo formatado
+        # tempo formatado
         horas = int(tempo_total.total_seconds() // 3600)
         minutos = int((tempo_total.total_seconds() % 3600) // 60)
         tempo_sugerido = f"{horas}:{minutos:02d}"
@@ -65,7 +68,7 @@ else:
 
             col_btn1, col_btn2 = st.columns(2)
 
-            # ✏️ EDITAR
+            #  EDITAR
             if col_btn1.button(f"✏️ Editar OS {numero_os}", key=f"edit_{os_id}"):
                 st.session_state[f"editando_{os_id}"] = True
 
@@ -117,7 +120,7 @@ else:
                     st.session_state[f"editando_{os_id}"] = False
                     st.rerun()
 
-            # ✅ FINALIZAR
+            #  FINALIZAR
             if col_btn2.button(f"✅ Finalizar OS {numero_os}", key=f"final_{os_id}"):
 
                 t1_intervalo = hora_para_intervalo(tempo_sugerido)
