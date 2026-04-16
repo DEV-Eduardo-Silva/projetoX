@@ -92,24 +92,21 @@ else:
 
                 if st.button(f"Salvar edição {numero_os}", key=f"save_{os_id}"):
 
-                    t1_intervalo = hora_para_intervalo(tempo_exec1)
-                    t2_intervalo = hora_para_intervalo(tempo_exec2)
-
                     cursor.execute("""
                         UPDATE ordens_servico
                         SET
                             executor1 = %s,
                             executor2 = %s,
-                            tempo_executor1 = %s,
-                            tempo_executor2 = %s,
+                            tempo_executor1 = (hora_inicio + (%s || ':00')::interval),
+                            tempo_executor2 = (hora_inicio + (%s || ':00')::interval),
                             data_saida = %s,
                             hora_saida = %s
                         WHERE id = %s
                     """, (
                         novo_exec1,
                         novo_exec2 if novo_exec2 else None,
-                        t1_intervalo,
-                        t2_intervalo,
+                        tempo_exec1,
+                        tempo_exec2,
                         data_saida,
                         hora_saida,
                         os_id
@@ -124,24 +121,24 @@ else:
             # FINALIZAR
             if col_btn2.button(f"Finalizar OS {numero_os}", key=f"final_{os_id}"):
 
-                t1_intervalo = hora_para_intervalo(tempo_sugerido)
-                t2_intervalo = t1_intervalo if executor2 else timedelta(0)
-
                 cursor.execute("""
                     UPDATE ordens_servico
                     SET
                         status = 'FINALIZADO',
                         data_saida = %s,
                         hora_saida = %s,
-                        tempo_executor1 = %s,
-                        tempo_executor2 = %s,
+                        tempo_executor1 = (hora_inicio + (%s || ':00')::interval),
+                        tempo_executor2 = CASE
+                            WHEN executor2 IS NULL THEN NULL
+                            ELSE (hora_inicio + (%s || ':00')::interval)
+                        END,
                         obs = COALESCE(obs, '') || %s
                     WHERE id = %s
                 """, (
                     agora.date(),
                     agora.time(),
-                    t1_intervalo,
-                    t2_intervalo,
+                    tempo_sugerido,
+                    tempo_sugerido,
                     f" | FINAL: {obs_final}" if obs_final else "",
                     os_id
                 ))
