@@ -19,6 +19,28 @@ def conectar():
         sslmode="require"
     )
 
+# FUNCAO PARA LIMPAR CAMPOS
+def limpar_campos():
+    chaves_limpar = [
+        "placa",
+        "mecanica",
+        "eletrica",
+        "borracharia",
+        "chapeacao",
+        "material",
+        "amarracao",
+        "obs_mecanica",
+        "obs_eletrica",
+        "obs_borracharia",
+        "obs_chapeacao",
+        "obs_material",
+        "obs_amarracao"
+    ]
+
+    for chave in chaves_limpar:
+        if chave in st.session_state:
+            del st.session_state[chave]
+
 # INPUT PLACA
 placa = st.text_input("Placa do veículo", key="placa")
 
@@ -205,33 +227,21 @@ if st.button("Abrir OS"):
 
             conn.commit()
 
-            st.success("OS abertas com sucesso!")
-
-            # LIMPAR CAMPOS APOS ABRIR
-            chaves_limpar = [
-                "placa",
-                "mecanica",
-                "eletrica",
-                "borracharia",
-                "chapeacao",
-                "material",
-                "amarracao",
-                "obs_mecanica",
-                "obs_eletrica",
-                "obs_borracharia",
-                "obs_chapeacao",
-                "obs_material",
-                "obs_amarracao"
-            ]
-
-            for chave in chaves_limpar:
-                if chave in st.session_state:
-                    del st.session_state[chave]
-
             cursor.close()
             conn.close()
 
+            # ATIVA MODAL
+            st.session_state["mostrar_modal_sucesso"] = True
             st.rerun()
 
         cursor.close()
         conn.close()
+
+# MODAL DE CONFIRMACAO
+if st.session_state.get("mostrar_modal_sucesso", False):
+    with st.modal("Confirmação"):
+        st.success("OS abertas com sucesso!")
+        if st.button("OK"):
+            st.session_state["mostrar_modal_sucesso"] = False
+            limpar_campos()
+            st.rerun()
