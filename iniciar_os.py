@@ -3,6 +3,11 @@ import psycopg2
 from datetime import datetime
 from dotenv import load_dotenv
 import os
+import pytz
+
+# FUSO BRASILIA
+fuso_brasilia = pytz.timezone("America/Sao_Paulo")
+
 load_dotenv()
 st.title("🧑‍🔧 Início de Serviços")
 
@@ -108,7 +113,7 @@ else:
                 st.warning("Selecione pelo menos um serviço")
 
             else:
-                agora = datetime.now()
+                agora = datetime.now(fuso_brasilia)
 
                 for item in selecionados:
                     os_id = item[0]
