@@ -1,6 +1,6 @@
 import streamlit as st
 import psycopg2
-from datetime import datetime
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import os
 import pytz
@@ -113,7 +113,7 @@ else:
                 st.warning("Selecione pelo menos um serviço")
 
             else:
-                agora = datetime.now(fuso_brasilia)
+                agora = datetime.now(fuso_brasilia) + timedelta(minutes=6) #ACRESCENTANDO MINUTOS DE ABERTURA PARA CONTROLE DE ERROS UIPATH
 
                 for item in selecionados:
                     os_id = item[0]
