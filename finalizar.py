@@ -79,6 +79,7 @@ else:
             col_btn1, col_btn2 = st.columns(2)
 
             # EDITAR
+        
             if col_btn1.button(f"Editar OS {numero_os}", key=f"edit_{os_id}"):
                 st.session_state[f"editando_{os_id}"] = True
 
@@ -86,18 +87,34 @@ else:
 
                 st.warning("Modo edição ativo")
 
-                novo_exec1 = st.text_input("Executor 1", value=executor1 or "", key=f"exec1_{os_id}")
-                novo_exec2 = st.text_input("Executor 2", value=executor2 or "", key=f"exec2_{os_id}")
+                lista_exec1 = ["Adilso", "Fabio", "Valdir", "Leandro", "Jesus", "Evandro", "Aleson", "Marcos", "Dionathan"]
+                lista_exec2 = [""] + lista_exec1
 
-                tempo_exec1 = st.text_input("Tempo Executor 1 (h:mm)", value=tempo_sugerido, key=f"t1_{os_id}")
+                # DEFINE INDEX EXECUTOR 1
+                if executor1 in lista_exec1:
+                    index_exec1 = lista_exec1.index(executor1)
+                else:
+                    index_exec1 = 0
 
-                tempo_exec2 = "0:00"
-                if novo_exec2 and novo_exec2.strip() != "":
-                    tempo_exec2 = st.text_input(
-                        "Tempo Executor 2 (h:mm)",
-                        value=tempo_sugerido,
-                        key=f"t2_{os_id}"
-                    )
+                # DEFINE INDEX EXECUTOR 2
+                if executor2 in lista_exec2:
+                    index_exec2 = lista_exec2.index(executor2)
+                else:
+                    index_exec2 = 0
+
+                novo_exec1 = st.selectbox(
+                    "Executor 1",
+                    lista_exec1,
+                    index=index_exec1,
+                    key=f"exec1_{os_id}"
+                )
+
+                novo_exec2 = st.selectbox(
+                    "Executor 2",
+                    lista_exec2,
+                    index=index_exec2,
+                    key=f"exec2_{os_id}"
+                )
 
                 data_saida = st.date_input("Data de saída", value=agora.date(), key=f"data_{os_id}")
                 hora_saida = st.time_input("Hora de saída", value=agora.time(), key=f"hora_{os_id}")
