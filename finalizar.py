@@ -19,6 +19,15 @@ def conectar():
         sslmode="require"
     )
 
+# FUNCAO PARA CONVERTER TEXTO h:mm PARA INTERVALO
+def hora_para_intervalo(hhmm):
+    try:
+        hhmm = hhmm.strip()
+        h, m = hhmm.split(":")
+        return timedelta(hours=int(h), minutes=int(m))
+    except:
+        return timedelta(0)
+
 # FUNCAO PARA FORMATAR timedelta EM h:mm
 def formatar_timedelta(td):
     total_segundos = int(td.total_seconds())
@@ -52,6 +61,7 @@ else:
 
         agora = datetime.now(fuso_brasilia)
 
+        # VALIDACAO PARA NAO QUEBRAR SE ESTIVER NULO
         if data_inicio is None or hora_inicio is None:
             st.error(f"OS {numero_os} está sem data_inicio ou hora_inicio no banco.")
             continue
@@ -59,6 +69,7 @@ else:
         inicio = fuso_brasilia.localize(datetime.combine(data_inicio, hora_inicio))
         tempo_total = agora - inicio
 
+        # SE TEMPO DER NEGATIVO, ZERA
         if tempo_total.total_seconds() < 0:
             tempo_total = timedelta(0)
 
@@ -68,9 +79,7 @@ else:
         lista_exec1 = ["Adilso", "Fabio", "Valdir", "Leandro", "Jesus", "Evandro", "Aleson", "Marcos", "Dionathan"]
         lista_exec2 = [""] + lista_exec1
 
-        executor1 = (executor1 or "").strip()
-        executor2 = (executor2 or "").strip()
-
+        # UI
         with st.expander(
             f"{placa} | {tipo} | {executor1} {executor2 if executor2 else ''} | {tempo_sugerido}",
             expanded=False
@@ -82,6 +91,7 @@ else:
 
             col_btn1, col_btn2 = st.columns(2)
 
+            # EDITAR
             if col_btn1.button(f"Editar OS {numero_os}", key=f"edit_{os_id}"):
                 st.session_state[f"editando_{os_id}"] = True
 
@@ -89,24 +99,29 @@ else:
 
                 st.warning("Modo edição ativo")
 
-                # GARANTE VALORES VÁLIDOS
-                if executor1 not in lista_exec1:
-                    executor1 = lista_exec1[0]
+                # DEFINE INDEX EXECUTOR 1
+                if executor1 in lista_exec1:
+                    index_exec1 = lista_exec1.index(executor1)
+                else:
+                    index_exec1 = 0
 
-                if executor2 not in lista_exec2:
-                    executor2 = ""
+                # DEFINE INDEX EXECUTOR 2
+                if executor2 in lista_exec2:
+                    index_exec2 = lista_exec2.index(executor2)
+                else:
+                    index_exec2 = 0
 
                 novo_exec1 = st.selectbox(
                     "Executor 1",
                     lista_exec1,
-                    index=lista_exec1.index(executor1),
+                    index=index_exec1,
                     key=f"exec1_{os_id}"
                 )
 
                 novo_exec2 = st.selectbox(
                     "Executor 2",
                     lista_exec2,
-                    index=lista_exec2.index(executor2),
+                    index=index_exec2,
                     key=f"exec2_{os_id}"
                 )
 
@@ -116,8 +131,8 @@ else:
                     key=f"t1_{os_id}"
                 )
 
-                tempo_exec2 = ""
-                if novo_exec2.strip() != "":
+                tempo_exec2 = "0:00"
+                if novo_exec2 and novo_exec2.strip() != "":
                     tempo_exec2 = st.text_input(
                         "Tempo Executor 2 (h:mm)",
                         value=tempo_sugerido,
@@ -142,8 +157,7 @@ else:
                             hora_maodeobra = (
                                 hora_inicio +
                                 CASE
-                                    WHEN %s IS NOT NULL AND %s <> ''
-                                        THEN (%s || ':00')::interval
+                                    WHEN %s IS NULL OR %s = '' THEN (%s || ':00')::interval
                                     ELSE (%s || ':00')::interval
                                 END
                             ),
@@ -152,13 +166,17 @@ else:
                         WHERE id = %s
                     """, (
                         novo_exec1,
-                        novo_exec2 if novo_exec2.strip() != "" else None,
+                        novo_exec2 if novo_exec2 else None,
                         tempo_exec1,
 
-                        tempo_exec2, tempo_exec2, tempo_exec2,
+                        tempo_exec2,
+                        tempo_exec2,
+                        tempo_exec2,
 
-                        tempo_exec2, tempo_exec2, tempo_exec2,
+                        tempo_exec2,
+                        tempo_exec2,
                         tempo_exec1,
+                        tempo_exec2,
 
                         data_saida,
                         hora_saida,
@@ -173,20 +191,22 @@ else:
 
             st.divider()
 
+            # CAMPOS PARA FINALIZAR (sempre aparecem)
             tempo_final_exec1 = st.text_input(
                 "Tempo Executor 1 para finalizar (h:mm)",
                 value=tempo_sugerido,
                 key=f"tempo_final_1_{os_id}"
             )
 
-            tempo_final_exec2 = ""
-            if executor2.strip() != "":
+            tempo_final_exec2 = "0:00"
+            if executor2 and executor2.strip() != "":
                 tempo_final_exec2 = st.text_input(
                     "Tempo Executor 2 para finalizar (h:mm)",
                     value=tempo_sugerido,
                     key=f"tempo_final_2_{os_id}"
                 )
 
+            # FINALIZAR
             if col_btn2.button(f"Finalizar OS {numero_os}", key=f"final_{os_id}"):
 
                 cursor.execute("""
@@ -197,15 +217,14 @@ else:
                         hora_saida = %s,
                         tempo_executor1 = (%s || ':00')::interval,
                         tempo_executor2 = CASE
-                            WHEN %s IS NULL OR %s = '' THEN NULL
+                            WHEN executor2 IS NULL OR executor2 = '' THEN NULL
                             ELSE (%s || ':00')::interval
                         END,
                         hora_maodeobra = (
                             hora_inicio +
                             CASE
-                                WHEN %s IS NOT NULL AND %s <> ''
-                                    THEN (%s || ':00')::interval
-                                ELSE (%s || ':00')::interval
+                                WHEN %s IS NULL OR %s = '' THEN (%s || ':00')::interval
+                                    ELSE (%s || ':00')::interval
                             END
                         ),
                         obs = COALESCE(obs, '') || %s
@@ -216,8 +235,10 @@ else:
                     tempo_final_exec1,
                     tempo_final_exec2,
 
-                    tempo_final_exec2, tempo_final_exec2, tempo_final_exec2,
+                    tempo_final_exec2,
+                    tempo_final_exec2,
                     tempo_final_exec1,
+                    tempo_final_exec2,
 
                     f" | FINAL: {obs_final}" if obs_final else "",
                     os_id
