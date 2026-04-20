@@ -142,6 +142,9 @@ else:
                 data_saida = st.date_input("Data de saída", value=agora.date(), key=f"data_{os_id}")
                 hora_saida = st.time_input("Hora de saída", value=agora.time(), key=f"hora_{os_id}")
 
+                # ==========================
+                # SALVAR EDIÇÃO (CORRIGIDO)
+                # ==========================
                 if st.button(f"Salvar edição {numero_os}", key=f"save_{os_id}"):
 
                     cursor.execute("""
@@ -171,13 +174,9 @@ else:
                         novo_exec1,
                         novo_exec2 if novo_exec2 else None,
                         tempo_exec1,
-                        tempo_exec2,
-                        tempo_exec2,
-                        tempo_exec2,
+                        tempo_exec2, tempo_exec2, tempo_exec2,
                         tempo_exec1,
-                        tempo_exec2,
-                        tempo_exec2,
-                        tempo_exec2,
+                        tempo_exec2, tempo_exec2, tempo_exec2,
                         data_saida,
                         hora_saida,
                         os_id
@@ -206,7 +205,9 @@ else:
                     key=f"tempo_final_2_{os_id}"
                 )
 
-            # FINALIZAR
+            # ==========================
+            # FINALIZAR (CORRIGIDO)
+            # ==========================
             if col_btn2.button(f"Finalizar OS {numero_os}", key=f"final_{os_id}"):
 
                 cursor.execute("""
