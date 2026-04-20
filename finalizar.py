@@ -52,7 +52,6 @@ else:
 
         agora = datetime.now(fuso_brasilia)
 
-        # VALIDACAO PARA NAO QUEBRAR SE ESTIVER NULO
         if data_inicio is None or hora_inicio is None:
             st.error(f"OS {numero_os} está sem data_inicio ou hora_inicio no banco.")
             continue
@@ -60,7 +59,6 @@ else:
         inicio = fuso_brasilia.localize(datetime.combine(data_inicio, hora_inicio))
         tempo_total = agora - inicio
 
-        # SE TEMPO DER NEGATIVO, ZERA
         if tempo_total.total_seconds() < 0:
             tempo_total = timedelta(0)
 
@@ -70,11 +68,9 @@ else:
         lista_exec1 = ["Adilso", "Fabio", "Valdir", "Leandro", "Jesus", "Evandro", "Aleson", "Marcos", "Dionathan"]
         lista_exec2 = [""] + lista_exec1
 
-        # AJUSTA EXECUTORES (EVITA INDEX ERROR)
         executor1 = (executor1 or "").strip()
         executor2 = (executor2 or "").strip()
 
-        # UI
         with st.expander(
             f"{placa} | {tipo} | {executor1} {executor2 if executor2 else ''} | {tempo_sugerido}",
             expanded=False
@@ -86,7 +82,6 @@ else:
 
             col_btn1, col_btn2 = st.columns(2)
 
-            # EDITAR
             if col_btn1.button(f"Editar OS {numero_os}", key=f"edit_{os_id}"):
                 st.session_state[f"editando_{os_id}"] = True
 
@@ -94,29 +89,24 @@ else:
 
                 st.warning("Modo edição ativo")
 
-                # DEFINE INDEX EXECUTOR 1
-                if executor1 in lista_exec1:
-                    index_exec1 = lista_exec1.index(executor1)
-                else:
-                    index_exec1 = 0
+                # GARANTE VALORES VÁLIDOS
+                if executor1 not in lista_exec1:
+                    executor1 = lista_exec1[0]
 
-                # DEFINE INDEX EXECUTOR 2
-                if executor2 in lista_exec2:
-                    index_exec2 = lista_exec2.index(executor2)
-                else:
-                    index_exec2 = 0
+                if executor2 not in lista_exec2:
+                    executor2 = ""
 
                 novo_exec1 = st.selectbox(
                     "Executor 1",
                     lista_exec1,
-                    index=index_exec1,
+                    index=lista_exec1.index(executor1),
                     key=f"exec1_{os_id}"
                 )
 
                 novo_exec2 = st.selectbox(
                     "Executor 2",
                     lista_exec2,
-                    index=index_exec2,
+                    index=lista_exec2.index(executor2),
                     key=f"exec2_{os_id}"
                 )
 
@@ -127,7 +117,7 @@ else:
                 )
 
                 tempo_exec2 = ""
-                if novo_exec2 and novo_exec2.strip() != "":
+                if novo_exec2.strip() != "":
                     tempo_exec2 = st.text_input(
                         "Tempo Executor 2 (h:mm)",
                         value=tempo_sugerido,
@@ -137,9 +127,6 @@ else:
                 data_saida = st.date_input("Data de saída", value=agora.date(), key=f"data_{os_id}")
                 hora_saida = st.time_input("Hora de saída", value=agora.time(), key=f"hora_{os_id}")
 
-                # =============================
-                # SALVAR EDIÇÃO
-                # =============================
                 if st.button(f"Salvar edição {numero_os}", key=f"save_{os_id}"):
 
                     cursor.execute("""
@@ -165,7 +152,7 @@ else:
                         WHERE id = %s
                     """, (
                         novo_exec1,
-                        novo_exec2 if novo_exec2 else None,
+                        novo_exec2 if novo_exec2.strip() != "" else None,
                         tempo_exec1,
 
                         tempo_exec2, tempo_exec2, tempo_exec2,
@@ -186,7 +173,6 @@ else:
 
             st.divider()
 
-            # CAMPOS PARA FINALIZAR (sempre aparecem)
             tempo_final_exec1 = st.text_input(
                 "Tempo Executor 1 para finalizar (h:mm)",
                 value=tempo_sugerido,
@@ -194,16 +180,13 @@ else:
             )
 
             tempo_final_exec2 = ""
-            if executor2 and executor2.strip() != "":
+            if executor2.strip() != "":
                 tempo_final_exec2 = st.text_input(
                     "Tempo Executor 2 para finalizar (h:mm)",
                     value=tempo_sugerido,
                     key=f"tempo_final_2_{os_id}"
                 )
 
-            # =============================
-            # FINALIZAR
-            # =============================
             if col_btn2.button(f"Finalizar OS {numero_os}", key=f"final_{os_id}"):
 
                 cursor.execute("""
@@ -231,7 +214,6 @@ else:
                     agora.date(),
                     agora.time(),
                     tempo_final_exec1,
-
                     tempo_final_exec2,
 
                     tempo_final_exec2, tempo_final_exec2, tempo_final_exec2,
