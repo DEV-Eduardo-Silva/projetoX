@@ -70,6 +70,10 @@ else:
         lista_exec1 = ["Adilso", "Fabio", "Valdir", "Leandro", "Jesus", "Evandro", "Aleson", "Marcos", "Dionathan"]
         lista_exec2 = [""] + lista_exec1
 
+        # AJUSTA EXECUTORES (EVITA INDEX ERROR)
+        executor1 = (executor1 or "").strip()
+        executor2 = (executor2 or "").strip()
+
         # UI
         with st.expander(
             f"{placa} | {tipo} | {executor1} {executor2 if executor2 else ''} | {tempo_sugerido}",
@@ -134,7 +138,7 @@ else:
                 hora_saida = st.time_input("Hora de saída", value=agora.time(), key=f"hora_{os_id}")
 
                 # =============================
-                # SALVAR EDIÇÃO (CORRIGIDO)
+                # SALVAR EDIÇÃO
                 # =============================
                 if st.button(f"Salvar edição {numero_os}", key=f"save_{os_id}"):
 
@@ -198,7 +202,7 @@ else:
                 )
 
             # =============================
-            # FINALIZAR (CORRIGIDO)
+            # FINALIZAR
             # =============================
             if col_btn2.button(f"Finalizar OS {numero_os}", key=f"final_{os_id}"):
 
