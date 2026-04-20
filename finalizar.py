@@ -19,15 +19,6 @@ def conectar():
         sslmode="require"
     )
 
-# FUNCAO PARA CONVERTER TEXTO h:mm PARA INTERVALO
-def hora_para_intervalo(hhmm):
-    try:
-        hhmm = hhmm.strip()
-        h, m = hhmm.split(":")
-        return timedelta(hours=int(h), minutes=int(m))
-    except:
-        return timedelta(0)
-
 # FUNCAO PARA FORMATAR timedelta EM h:mm
 def formatar_timedelta(td):
     total_segundos = int(td.total_seconds())
@@ -78,6 +69,10 @@ else:
         # LISTA EXECUTORES
         lista_exec1 = ["Adilso", "Fabio", "Valdir", "Leandro", "Jesus", "Evandro", "Aleson", "Marcos", "Dionathan"]
         lista_exec2 = [""] + lista_exec1
+
+        # AJUSTA PARA NÃO DAR ERRO
+        executor1 = (executor1 or "").strip()
+        executor2 = (executor2 or "").strip()
 
         # UI
         with st.expander(
@@ -131,7 +126,7 @@ else:
                     key=f"t1_{os_id}"
                 )
 
-                tempo_exec2 = "0:00"
+                tempo_exec2 = ""
                 if novo_exec2 and novo_exec2.strip() != "":
                     tempo_exec2 = st.text_input(
                         "Tempo Executor 2 (h:mm)",
@@ -142,43 +137,52 @@ else:
                 data_saida = st.date_input("Data de saída", value=agora.date(), key=f"data_{os_id}")
                 hora_saida = st.time_input("Hora de saída", value=agora.time(), key=f"hora_{os_id}")
 
+                # ==========================
+                # SALVAR EDIÇÃO (CORRIGIDO)
+                # ==========================
                 if st.button(f"Salvar edição {numero_os}", key=f"save_{os_id}"):
 
                     cursor.execute("""
-                    UPDATE ordens_servico
-                    SET
-                        executor1 = %s,
-                        executor2 = %s,
-                        tempo_executor1 = (%s || ':00')::interval,
-                        tempo_executor2 = CASE
-                            WHEN %s IS NULL OR %s = '' THEN NULL
-                            ELSE (%s || ':00')::interval
-                        END,
-                        hora_maodeobra = (
-                            (hora_inicio::interval +
-                            CASE
-                                WHEN %s IS NULL OR %s = '' THEN (%s || ':00')::interval
+                        UPDATE ordens_servico
+                        SET
+                            executor1 = %s,
+                            executor2 = %s,
+                            tempo_executor1 = (%s || ':00')::interval,
+                            tempo_executor2 = CASE
+                                WHEN %s IS NULL OR %s = '' THEN NULL
                                 ELSE (%s || ':00')::interval
-                            END)::time
-                        ),
-                        data_saida = %s,
-                        hora_saida = %s
-                    WHERE id = %s
-                """, (
-                    novo_exec1,
-                    novo_exec2 if novo_exec2 else None,
-                    tempo_exec1,
+                            END,
+                            hora_maodeobra = (
+                                hora_inicio::interval +
+                                CASE
+                                    WHEN %s IS NULL OR %s = '' THEN (%s || ':00')::interval
+                                    ELSE (%s || ':00')::interval
+                                END
+                            )::time,
+                            data_saida = %s,
+                            hora_saida = %s
+                        WHERE id = %s
+                    """, (
+                        novo_exec1,
+                        novo_exec2 if novo_exec2 else None,
+                        tempo_exec1,
 
-                    tempo_exec2, tempo_exec2, tempo_exec2,
+                        tempo_exec2, tempo_exec2, tempo_exec2,
 
-                    tempo_exec2, tempo_exec2,
-                    tempo_exec1,
-                    tempo_exec2,
+                        tempo_exec2, tempo_exec2,
+                        tempo_exec1,
+                        tempo_exec2,
 
-                    data_saida,
-                    hora_saida,
-                    os_id
-                ))
+                        data_saida,
+                        hora_saida,
+                        os_id
+                    ))
+
+                    conn.commit()
+
+                    st.success("Alterações salvas!")
+                    st.session_state[f"editando_{os_id}"] = False
+                    st.rerun()
 
             st.divider()
 
@@ -189,7 +193,7 @@ else:
                 key=f"tempo_final_1_{os_id}"
             )
 
-            tempo_final_exec2 = "0:00"
+            tempo_final_exec2 = ""
             if executor2 and executor2.strip() != "":
                 tempo_final_exec2 = st.text_input(
                     "Tempo Executor 2 para finalizar (h:mm)",
@@ -197,42 +201,44 @@ else:
                     key=f"tempo_final_2_{os_id}"
                 )
 
-            # FINALIZAR
+            # ==========================
+            # FINALIZAR (CORRIGIDO)
+            # ==========================
             if col_btn2.button(f"Finalizar OS {numero_os}", key=f"final_{os_id}"):
 
                 cursor.execute("""
-                UPDATE ordens_servico
-                SET
-                    status = 'FINALIZADO',
-                    data_saida = %s,
-                    hora_saida = %s,
-                    tempo_executor1 = (%s || ':00')::interval,
-                    tempo_executor2 = CASE
-                        WHEN executor2 IS NULL OR executor2 = '' THEN NULL
-                        ELSE (%s || ':00')::interval
-                    END,
-                    hora_maodeobra = (
-                        (hora_inicio::interval +
-                        CASE
-                            WHEN %s IS NULL OR %s = '' THEN (%s || ':00')::interval
+                    UPDATE ordens_servico
+                    SET
+                        status = 'FINALIZADO',
+                        data_saida = %s,
+                        hora_saida = %s,
+                        tempo_executor1 = (%s || ':00')::interval,
+                        tempo_executor2 = CASE
+                            WHEN executor2 IS NULL OR executor2 = '' THEN NULL
                             ELSE (%s || ':00')::interval
-                        END)::time
-                    ),
-                    obs = COALESCE(obs, '') || %s
-                WHERE id = %s
-            """, (
-                agora.date(),
-                agora.time(),
-                tempo_final_exec1,
-                tempo_final_exec2,
+                        END,
+                        hora_maodeobra = (
+                            hora_inicio::interval +
+                            CASE
+                                WHEN %s IS NULL OR %s = '' THEN (%s || ':00')::interval
+                                ELSE (%s || ':00')::interval
+                            END
+                        )::time,
+                        obs = COALESCE(obs, '') || %s
+                    WHERE id = %s
+                """, (
+                    agora.date(),
+                    agora.time(),
+                    tempo_final_exec1,
+                    tempo_final_exec2,
 
-                tempo_final_exec2, tempo_final_exec2,
-                tempo_final_exec1,
-                tempo_final_exec2,
+                    tempo_final_exec2, tempo_final_exec2,
+                    tempo_final_exec1,
+                    tempo_final_exec2,
 
-                f" | FINAL: {obs_final}" if obs_final else "",
-                os_id
-            ))
+                    f" | FINAL: {obs_final}" if obs_final else "",
+                    os_id
+                ))
 
                 conn.commit()
 
