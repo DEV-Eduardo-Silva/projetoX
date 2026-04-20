@@ -61,7 +61,7 @@ else:
 
         tempo_sugerido = formatar_timedelta(tempo_total)
 
-        lista_exec1 = ["Adilso", "Fabio", "Valdir", "Leandro", "Jesus", "Evandro", "Aleson", "Marcos", "Dionathan"]
+        lista_exec1 = ["Adilso", "material", "Fabio", "Valdir", "Leandro", "Jesus", "Evandro", "Aleson", "Marcos", "Dionathan"]
         lista_exec2 = [""] + lista_exec1
 
         executor1 = (executor1 or "").strip()
