@@ -19,15 +19,6 @@ def conectar():
         sslmode="require"
     )
 
-# FUNCAO PARA CONVERTER TEXTO h:mm PARA INTERVALO
-def hora_para_intervalo(hhmm):
-    try:
-        hhmm = hhmm.strip()
-        h, m = hhmm.split(":")
-        return timedelta(hours=int(h), minutes=int(m))
-    except:
-        return timedelta(0)
-
 # FUNCAO PARA FORMATAR timedelta EM h:mm
 def formatar_timedelta(td):
     total_segundos = int(td.total_seconds())
@@ -131,7 +122,7 @@ else:
                     key=f"t1_{os_id}"
                 )
 
-                tempo_exec2 = "0:00"
+                tempo_exec2 = ""
                 if novo_exec2 and novo_exec2.strip() != "":
                     tempo_exec2 = st.text_input(
                         "Tempo Executor 2 (h:mm)",
@@ -142,9 +133,9 @@ else:
                 data_saida = st.date_input("Data de saída", value=agora.date(), key=f"data_{os_id}")
                 hora_saida = st.time_input("Hora de saída", value=agora.time(), key=f"hora_{os_id}")
 
-                # ==========================
+                # =============================
                 # SALVAR EDIÇÃO (CORRIGIDO)
-                # ==========================
+                # =============================
                 if st.button(f"Salvar edição {numero_os}", key=f"save_{os_id}"):
 
                     cursor.execute("""
@@ -159,13 +150,11 @@ else:
                             END,
                             hora_maodeobra = (
                                 hora_inicio +
-                                GREATEST(
-                                    (%s || ':00')::interval,
-                                    CASE
-                                        WHEN %s IS NULL OR %s = '' THEN interval '0'
-                                        ELSE (%s || ':00')::interval
-                                    END
-                                )
+                                CASE
+                                    WHEN %s IS NOT NULL AND %s <> ''
+                                        THEN (%s || ':00')::interval
+                                    ELSE (%s || ':00')::interval
+                                END
                             ),
                             data_saida = %s,
                             hora_saida = %s
@@ -174,9 +163,12 @@ else:
                         novo_exec1,
                         novo_exec2 if novo_exec2 else None,
                         tempo_exec1,
+
+                        tempo_exec2, tempo_exec2, tempo_exec2,
+
                         tempo_exec2, tempo_exec2, tempo_exec2,
                         tempo_exec1,
-                        tempo_exec2, tempo_exec2, tempo_exec2,
+
                         data_saida,
                         hora_saida,
                         os_id
@@ -197,7 +189,7 @@ else:
                 key=f"tempo_final_1_{os_id}"
             )
 
-            tempo_final_exec2 = "0:00"
+            tempo_final_exec2 = ""
             if executor2 and executor2.strip() != "":
                 tempo_final_exec2 = st.text_input(
                     "Tempo Executor 2 para finalizar (h:mm)",
@@ -205,9 +197,9 @@ else:
                     key=f"tempo_final_2_{os_id}"
                 )
 
-            # ==========================
+            # =============================
             # FINALIZAR (CORRIGIDO)
-            # ==========================
+            # =============================
             if col_btn2.button(f"Finalizar OS {numero_os}", key=f"final_{os_id}"):
 
                 cursor.execute("""
@@ -218,18 +210,16 @@ else:
                         hora_saida = %s,
                         tempo_executor1 = (%s || ':00')::interval,
                         tempo_executor2 = CASE
-                            WHEN executor2 IS NULL OR executor2 = '' THEN NULL
+                            WHEN %s IS NULL OR %s = '' THEN NULL
                             ELSE (%s || ':00')::interval
                         END,
                         hora_maodeobra = (
                             hora_inicio +
-                            GREATEST(
-                                (%s || ':00')::interval,
-                                CASE
-                                    WHEN executor2 IS NULL OR executor2 = '' THEN interval '0'
-                                    ELSE (%s || ':00')::interval
-                                END
-                            )
+                            CASE
+                                WHEN %s IS NOT NULL AND %s <> ''
+                                    THEN (%s || ':00')::interval
+                                ELSE (%s || ':00')::interval
+                            END
                         ),
                         obs = COALESCE(obs, '') || %s
                     WHERE id = %s
@@ -237,9 +227,12 @@ else:
                     agora.date(),
                     agora.time(),
                     tempo_final_exec1,
+
                     tempo_final_exec2,
+
+                    tempo_final_exec2, tempo_final_exec2, tempo_final_exec2,
                     tempo_final_exec1,
-                    tempo_final_exec2,
+
                     f" | FINAL: {obs_final}" if obs_final else "",
                     os_id
                 ))
