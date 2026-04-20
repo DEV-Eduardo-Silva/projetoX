@@ -154,7 +154,16 @@ else:
                                 WHEN %s IS NULL OR %s = '' THEN NULL
                                 ELSE (%s || ':00')::interval
                             END,
-                            hora_maodeobra = (hora_inicio + (%s || ':00')::interval),
+                            hora_maodeobra = (
+                                hora_inicio +
+                                GREATEST(
+                                    (%s || ':00')::interval,
+                                    CASE
+                                        WHEN %s IS NULL OR %s = '' THEN interval '0'
+                                        ELSE (%s || ':00')::interval
+                                    END
+                                )
+                            ),
                             data_saida = %s,
                             hora_saida = %s
                         WHERE id = %s
@@ -162,10 +171,13 @@ else:
                         novo_exec1,
                         novo_exec2 if novo_exec2 else None,
                         tempo_exec1,
-                        novo_exec2,
-                        novo_exec2,
+                        tempo_exec2,
+                        tempo_exec2,
                         tempo_exec2,
                         tempo_exec1,
+                        tempo_exec2,
+                        tempo_exec2,
+                        tempo_exec2,
                         data_saida,
                         hora_saida,
                         os_id
@@ -208,7 +220,16 @@ else:
                             WHEN executor2 IS NULL OR executor2 = '' THEN NULL
                             ELSE (%s || ':00')::interval
                         END,
-                        hora_maodeobra = (hora_inicio + (%s || ':00')::interval),
+                        hora_maodeobra = (
+                            hora_inicio +
+                            GREATEST(
+                                (%s || ':00')::interval,
+                                CASE
+                                    WHEN executor2 IS NULL OR executor2 = '' THEN interval '0'
+                                    ELSE (%s || ':00')::interval
+                                END
+                            )
+                        ),
                         obs = COALESCE(obs, '') || %s
                     WHERE id = %s
                 """, (
@@ -217,6 +238,7 @@ else:
                     tempo_final_exec1,
                     tempo_final_exec2,
                     tempo_final_exec1,
+                    tempo_final_exec2,
                     f" | FINAL: {obs_final}" if obs_final else "",
                     os_id
                 ))
